@@ -14,7 +14,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,4 +41,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+<<<<<<< HEAD:.github/workflows/deploy.yaml
 
+=======
+>>>>>>> 17c8ee4540fa395a41191f4203d717080adea9ab:.github/workflows/deploy.yml/Untitled-1.yaml
