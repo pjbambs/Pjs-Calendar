@@ -1,0 +1,908 @@
+/* ==========================================================================
+   RESET & THEME VARIABLES
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Light mode (default) color palette. Every component below reads its
+   colors from these variables instead of hardcoded hex values, so the
+   whole app can re-theme itself just by toggling the .dark class. */
+:root {
+  --bg-page: #e8e9ee;
+  --bg-card: #ffffff;
+  --border-color: #eceef2;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #c3c7d1;
+  --btn-bg: #ffffff;
+  --btn-border: #e2e4ea;
+  --btn-hover: #f5f6f8;
+  --watermark-color: #dbeafe;
+  --shadow-color: rgba(0, 0, 0, 0.06);
+  --accent-blue: #3b82f6;
+  --accent-blue-hover: #2f6fe0;
+}
+
+/* Dark mode overrides (Apple-style near-black + elevated surfaces).
+   Applied whenever the outer wrapper has className="... dark". */
+.dark {
+  --bg-page: #000000;
+  --bg-card: #1c1c1e;
+  --border-color: #38383a;
+  --text-primary: #f5f5f7;
+  --text-secondary: #98989d;
+  --text-muted: #48484a;
+  --btn-bg: #2c2c2e;
+  --btn-border: #3a3a3c;
+  --btn-hover: #3a3a3c;
+  --watermark-color: #1c2a3d;
+  --shadow-color: rgba(0, 0, 0, 0.6);
+  --accent-blue: #0a84ff;
+  --accent-blue-hover: #409cff;
+}
+
+/* ==========================================================================
+   PAGE LAYOUT
+   ========================================================================== */
+
+.calendar-page {
+  min-height: 100vh;
+  background: var(--bg-page);
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+  transition: background 0.3s ease;
+}
+
+.app-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  max-width: 1400px;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.calendar-card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px var(--shadow-color);
+  padding: 32px;
+  width: 100%;
+  max-width: 1150px;
+  transition: background 0.3s ease;
+}
+
+/* ==========================================================================
+   TOOLBAR
+   ========================================================================== */
+
+.calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.month-select,
+.today-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: var(--text-primary);
+}
+
+.month-select:hover,
+.today-btn:hover {
+  background: var(--btn-hover);
+}
+
+.add-event-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent-blue);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.add-event-btn:hover {
+  background: var(--accent-blue-hover);
+}
+
+.year-label {
+  font-size: 20px;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.nav-btn,
+.dark-mode-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: var(--text-primary);
+}
+
+.nav-btn:hover,
+.dark-mode-btn:hover {
+  background: var(--btn-hover);
+}
+
+/* ==========================================================================
+   MAIN CALENDAR GRID
+   ========================================================================== */
+
+/* Rounded so the whole grid (header row + all week rows) reads as one
+   contained card with soft corners, matching the calendar-card shell.
+   overflow: hidden clips the square day-cell corners at the edges so
+   only the outer 4 corners of the grid end up rounded. */
+.calendar-grid-wrapper {
+  border-top: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.day-name {
+  padding: 14px 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* A week is one row of 7 day-cells, with event bars absolutely
+   positioned on top of it (see .week-bars below) so a multi-day
+   event can render as one continuous strip instead of per-cell pills. */
+.week-row {
+  position: relative;
+}
+
+.week-cells {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.day-cell {
+  position: relative;
+  height: 110px;
+  padding: 8px 4px;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-left: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  transition: background 0.15s ease, padding-top 0.15s ease;
+}
+
+.day-cell:nth-child(7n + 1) {
+  border-left: 1px solid var(--border-color);
+}
+
+.day-number {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.other-month .day-number {
+  color: var(--text-muted);
+}
+
+.month-watermark {
+  position: absolute;
+  bottom: 12px;
+  left: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--watermark-color);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.day-number.today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  color: white;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+/* ==========================================================================
+   TIMED EVENTS (regular pills inside each day cell)
+   ========================================================================== */
+
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.event-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: grab;
+  min-width: 0;
+  width: 100%;
+  border-style: solid;
+  border-width: 1.5px;
+  min-height: 22px;
+  box-sizing: border-box;
+}
+
+.event-pill:active {
+  cursor: grabbing;
+}
+
+.event-emoji {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.event-title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.event-time {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.more-events {
+  font-size: 10px;
+  color: var(--text-secondary);
+  padding-left: 4px;
+}
+
+/* ==========================================================================
+   MULTI-DAY EVENT BARS (absolutely positioned over a week row)
+   ========================================================================== */
+
+.week-bars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  pointer-events: none;
+}
+
+.week-span-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  overflow: hidden;
+  cursor: grab;
+  pointer-events: auto;
+  border-style: solid;
+  border-width: 1.5px;
+  box-sizing: border-box;
+}
+
+.week-span-bar:active {
+  cursor: grabbing;
+}
+
+.week-span-bar:active {
+  cursor: grabbing;
+}
+
+.bar-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.bar-emoji {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+}
+
+.bar-arrow {
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   MODAL SHARED STYLES
+   ========================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* ==========================================================================
+   ADD / EDIT EVENT FORM
+   ========================================================================== */
+
+.event-form {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  width: 340px;
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-form h3 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.event-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.event-form input[type="text"],
+.event-form input[type="date"],
+.event-form input[type="time"] {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-direction: row;
+  cursor: pointer;
+}
+
+.emoji-picker-grouped {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.emoji-category-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.emoji-picker,
+.color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.emoji-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.emoji-option.selected {
+  border-color: var(--accent-blue);
+  background: var(--btn-hover);
+}
+
+.color-option {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.color-option.selected {
+  border-color: var(--text-primary);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cancel-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.save-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent-blue);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #ef4444;
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  margin-right: auto;
+}
+
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ==========================================================================
+   MINI CALENDAR (sidebar)
+   ========================================================================== */
+
+.mini-calendar {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+.mini-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.mini-nav-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.mini-nav-btn:hover {
+  background: var(--btn-hover);
+}
+
+.mini-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.mini-day-name {
+  font-size: 10px;
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+.mini-day-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 12px;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.mini-day-cell:hover {
+  background: var(--btn-hover);
+}
+
+.mini-day-cell.faded {
+  color: var(--text-muted);
+}
+
+.mini-day-dots {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+}
+
+.mini-day-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mini-day-cell.mini-today span:first-child {
+  background: var(--accent-blue);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 11px;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.mini-day-cell .mini-day-dots .mini-day-dot {
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   DAILY TO-DO LIST (sidebar)
+   ========================================================================== */
+
+.todo-section {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+.todo-section h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.todo-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.todo-list li.done span {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.todo-text {
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+  padding: 3px 3px;
+  border-radius: 16px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.todo-text:hover {
+  background: var(--btn-hover);
+}
+
+.todo-delete-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.todo-delete-btn:hover {
+  color: #ef4444;
+}
+
+.todo-form input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   MONTHLY EVENTS SUMMARY (sidebar)
+   ========================================================================== */
+
+.monthly-tasks-section {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+.monthly-tasks-section h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.monthly-tasks-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.monthly-task-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.task-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-label {
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.no-tasks {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   DAY SCHEDULE POPUP
+   ========================================================================== */
+
+.day-schedule {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 20px;
+  width: 380px;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.day-schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.day-schedule-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.schedule-allday-row {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 4px;
+}
+
+.schedule-allday-events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.schedule-hours {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.schedule-hour-row {
+  display: flex;
+  gap: 10px;
+  height: 40px;
+  box-sizing: border-box;
+  border-top: 1px solid var(--border-color);
+}
+
+.schedule-row-label {
+  width: 60px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding-top: 2px;
+}
+
+.schedule-hour-line {
+  flex: 1;
+}
+
+.schedule-timed-events {
+  position: absolute;
+  top: 0;
+  left: 70px;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.schedule-event-block {
+  position: absolute;
+  left: 0;
+  right: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border-style: solid;
+  border-width: 1.5px;
+  overflow: hidden;
+  cursor: pointer;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.schedule-event-block-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-event-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
